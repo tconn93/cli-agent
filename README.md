@@ -116,12 +116,21 @@ npx prettier --write .
 ## Core Architecture
 
 ### Agent Loop
-The agent follows a multi-turn conversation pattern:
-1. User sends a message
-2. Message is sent to Grok API with tool definitions
-3. If Grok requests tool execution, tools are executed in parallel
-4. Tool results are sent back to Grok API
-5. Final response is displayed to user
+User Input → API Call → Loop:  
+```
+    ├─ If tool calls exist:  
+    │  ├─ Execute tools  
+    │  ├─ Send results to API  
+    │  └─ Check response for more tool calls  
+    └─ If no tool calls: Exit loop  
+```
+  How It Works
+
+  1. Iterative Loop: After executing tools and sending results back to Grok, the agent checks if the new response contains more tool calls
+  2. Continuous Execution: Keeps calling tools until Grok stops requesting them
+  3. Safety Limit: Maximum 10 iterations to prevent infinite loops
+  4. Real-time Updates: Each round of tool calls is displayed to the user as it happens
+
 
 ### Tool System
 Tools follow a pluggable architecture:
