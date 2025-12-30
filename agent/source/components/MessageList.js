@@ -57,6 +57,17 @@ function MessageList({messages}) {
 					}
 				}
 
+				if (msg.role === 'system') {
+					return (
+						<Box key={index} marginY={1} flexDirection="column">
+							<Text bold color={msg.success ? 'blue' : 'red'}>
+								System:{' '}
+							</Text>
+							<Text>{msg.content}</Text>
+						</Box>
+					);
+				}
+
 				return null;
 			})}
 		</Box>

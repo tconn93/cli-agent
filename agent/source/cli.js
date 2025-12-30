@@ -14,6 +14,7 @@ import EditFileTool from './tools/edit-file-tool.js';
 import ListFilesTool from './tools/list-files-tool.js';
 import SearchFilesTool from './tools/search-files-tool.js';
 import WebSearchTool from './tools/web-search-tool.js';
+import ExploreProjectTool from './tools/explore-project-tool.js';
 
 const cli = meow(
 	`
@@ -68,6 +69,7 @@ async function initializeApp() {
 	toolExecutor.registerTool(new BashExecuteTool(config.workingDir, fileTracker));
 	toolExecutor.registerTool(new ListFilesTool(config.workingDir, fileTracker));
 	toolExecutor.registerTool(new SearchFilesTool(config.workingDir, fileTracker));
+	toolExecutor.registerTool(new ExploreProjectTool(config.workingDir, fileTracker));
 	toolExecutor.registerTool(new WebSearchTool(config.workingDir, fileTracker));
 
 	// Render the app

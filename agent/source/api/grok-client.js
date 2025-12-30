@@ -54,9 +54,6 @@ class GrokClient {
 
 	async _makeRequest(body, retryCount = 0) {
 		try {
-			// Log the request for debugging
-			console.log('Request to Grok API:', JSON.stringify(body, null, 2));
-
 			const response = await fetch(`${this.baseURL}/responses`, {
 				method: 'POST',
 				headers: {
@@ -65,9 +62,6 @@ class GrokClient {
 				},
 				body: JSON.stringify(body),
 			});
-
-			// Log response status
-			console.log('Response status:', response.status);
 
 			// Handle different HTTP status codes
 			if (response.status === 429) {
@@ -100,7 +94,6 @@ class GrokClient {
 			if (!response.ok) {
 				// Try to get the error response body
 				const responseText = await response.text();
-				console.log('Error response body:', responseText);
 
 				let errorData = {};
 				try {
@@ -120,11 +113,8 @@ class GrokClient {
 				throw new Error(errorMessage);
 			}
 
-			const responseData = await response.json();
-			console.log('Success response:', JSON.stringify(responseData, null, 2));
-			return responseData;
+			return response.json();
 		} catch (error) {
-			console.error('Request error:', error);
 
 			// Network errors - retry
 			if (error.name === 'TypeError' && retryCount < this.maxRetries) {

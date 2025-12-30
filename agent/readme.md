@@ -67,6 +67,9 @@ Examples
 
 The agent has access to the following tools:
 
+### Project Navigation
+- **explore_project**: Get a visual file tree of the project structure, respecting .gitignore patterns. Great for understanding project layout.
+
 ### File Operations
 - **read_file**: Read the contents of a file
 - **write_file**: Create or overwrite a file with new content
@@ -82,8 +85,104 @@ The agent has access to the following tools:
 ### Web (Placeholder)
 - **web_search**: Web search capability (requires API configuration)
 
-## Example Session
+## Slash Commands
 
+The agent supports several built-in commands that you can use by typing `/` followed by the command name:
+
+| Command | Description |
+|---------|-------------|
+| `/init` | **Initialize project context** - Explores project structure, reads README files, and creates GROK.md with AI-generated project documentation |
+| `/help` | Show all available commands |
+| `/help <command>` | Get help for a specific command |
+| `/tools` | List all available tools |
+| `/stats` | Show session statistics (messages, file changes, etc.) |
+| `/clear` or `/reset` | Clear conversation history |
+| `/exit` | Exit the application |
+
+### Special Command: `/init`
+
+The `/init` command is particularly useful when starting work on a new project. It:
+1. Explores the entire project structure (respecting .gitignore)
+2. Reads README.md files
+3. Sends this information to Grok
+4. Creates a **GROK.md** file with AI-generated project documentation
+
+This gives the AI persistent context about your project that it can reference in future conversations.
+
+```
+> /init
+System: Initializing project context...
+
+System: ✅ Project initialized successfully!
+
+GROK.md has been created with project context.
+Files analyzed: 42
+Directories: 8
+
+You can now reference this file in future conversations.
+```
+
+### Other Commands
+
+```
+> /help
+System: Available commands:
+  /init - Initialize project context by exploring structure and creating GROK.md
+  /help - Show available commands
+  /clear - Clear conversation history
+  /exit - Exit the application
+  /tools - List all available tools
+  /stats - Show session statistics
+  /reset - Reset conversation (alias for /clear)
+
+> /tools
+System: Available tools (8):
+  read_file - Read the contents of a file from the filesystem
+  explore_project - Get a visual file tree of the project structure
+  write_file - Write content to a file, creating it if it doesn't exist...
+  ...
+
+> /stats
+System: Session Statistics
+Model: grok-beta
+Working Directory: /home/user/project
+Total Messages: 12
+User Messages: 6
+Assistant Messages: 5
+Tool Executions: 3
+
+File Changes
+Files Modified: 2
+Created: 1
+Modified: 1
+```
+
+## Example Sessions
+
+### Exploring a Project
+```
+> Show me the structure of this project
+
+Agent: I'll explore the project structure for you.
+→ Executing: explore_project
+
+Agent: Here's the project structure:
+📁 src/
+│   ├── 📁 components/
+│   │   ├── 📄 App.js
+│   │   └── 📄 Header.js
+│   ├── 📁 utils/
+│   │   └── 📄 helpers.js
+│   └── 📄 index.js
+📁 tests/
+│   └── 📄 app.test.js
+📄 package.json
+📄 README.md
+
+Total: 7 files, 3 directories
+```
+
+### File Operations
 ```
 > Read the package.json file
 
