@@ -1,6 +1,6 @@
 import {useState, useCallback} from 'react';
 
-function useAgentLoop(grokClient, toolExecutor, config) {
+function useAgentLoop(apiClient, toolExecutor, config) {
 	const [messages, setMessages] = useState([]);
 	const [status, setStatus] = useState('idle'); // 'idle' | 'calling_api' | 'executing_tools'
 	const [error, setError] = useState(null);
@@ -21,16 +21,12 @@ function useAgentLoop(grokClient, toolExecutor, config) {
 					timestamp: Date.now(),
 				};
 				setMessages((prev) => [...prev, userMessage]);
+
+				// 2. Add user message to API client history
+				apiClient.addUserMessage(userInput);
 				setStatus('calling_api');
 
-				// 2. Call Grok API with user input
-				let response = await grokClient.sendMessage(
-					userInput,
-					toolExecutor.getToolDefinitions(),
-					{model: config.model},
-				);
-
-				// 3. Process the response and handle tool calls iteratively
+				// 3. Start agent loop
 				let continueLoop = true;
 				let maxIterations = 10; // Safety limit to prevent infinite loops
 				let iteration = 0;
@@ -38,39 +34,40 @@ function useAgentLoop(grokClient, toolExecutor, config) {
 				while (continueLoop && iteration < maxIterations) {
 					iteration++;
 
-					const {output} = response;
+					// Call OpenAI API with full message history
+					const response = await apiClient.sendMessage(
+						toolExecutor.getToolDefinitions(),
+						{model: config.model},
+					);
 
-					// Extract assistant message and tool calls
-					const assistantMessages = output.filter((item) => item.type === 'message' && item.role === 'assistant');
-					const toolCalls = output.filter((item) => item.type === 'function_call');
+					// Extract content and tool calls
+					const {content, tool_calls} = response;
 
-					// Extract text content from assistant message
-					let assistantText = '';
-					if (assistantMessages.length > 0) {
-						const content = assistantMessages[0].content || [];
-						const textContent = content.find((c) => c.type === 'output_text');
-						if (textContent) {
-							assistantText = textContent.text;
-						}
-					}
+					// Add assistant message to API client history
+					apiClient.addAssistantMessage(content, tool_calls);
 
-					// Add assistant message to display (if there's content or tool calls)
-					if (assistantText || toolCalls.length > 0) {
-						const assistantMessage = {
-							role: 'assistant',
-							content: assistantText || '(Using tools...)',
-							tool_calls: toolCalls.length > 0 ? toolCalls : null,
-							timestamp: Date.now(),
-						};
-						setMessages((prev) => [...prev, assistantMessage]);
-					}
+					// Add assistant message to display
+					const displayMessage = {
+						role: 'assistant',
+						content: content || '(Using tools...)',
+						tool_calls: tool_calls.length > 0 ? tool_calls : null,
+						timestamp: Date.now(),
+					};
+					setMessages((prev) => [...prev, displayMessage]);
 
-					// Check if there are tool calls to execute
-					if (toolCalls.length > 0) {
+					// Check for tool calls
+					if (tool_calls && tool_calls.length > 0) {
 						setStatus('executing_tools');
 
-						// Execute all tools in parallel
-						const toolResults = await toolExecutor.executeAll(toolCalls);
+						// Transform OpenAI tool_calls to executor format
+						const executorToolCalls = tool_calls.map((tc) => ({
+							name: tc.function.name,
+							call_id: tc.id,
+							arguments: tc.function.arguments,
+						}));
+
+						// Execute tools in parallel
+						const toolResults = await toolExecutor.executeAll(executorToolCalls);
 
 						// Add tool results to display
 						const toolResultMessages = toolResults.map((result) => ({
@@ -81,17 +78,13 @@ function useAgentLoop(grokClient, toolExecutor, config) {
 						}));
 						setMessages((prev) => [...prev, ...toolResultMessages]);
 
-						// Send tool results back to API
-						setStatus('calling_api');
-						response = await grokClient.sendMessage(
-							toolResults,
-							toolExecutor.getToolDefinitions(),
-							{model: config.model},
-						);
+						// Add tool results to API client history
+						apiClient.addToolResults(toolResults);
 
-						// Loop continues to check if there are more tool calls
+						// Continue loop to get final response
+						setStatus('calling_api');
 					} else {
-						// No more tool calls, exit the loop
+						// No tool calls, we're done
 						continueLoop = false;
 					}
 				}
@@ -114,14 +107,14 @@ function useAgentLoop(grokClient, toolExecutor, config) {
 				setStatus('idle');
 			}
 		},
-		[grokClient, toolExecutor, config.model],
+		[apiClient, toolExecutor, config.model],
 	);
 
 	const clearMessages = useCallback(() => {
 		setMessages([]);
 		setError(null);
-		grokClient.resetConversation();
-	}, [grokClient]);
+		apiClient.resetConversation();
+	}, [apiClient]);
 
 	return {
 		messages,

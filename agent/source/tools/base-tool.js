@@ -9,7 +9,7 @@ class BaseTool {
 		this.parameters = {};
 	}
 
-	// Returns tool definition for Grok /v1/responses API
+	// Returns tool definition for OpenAI-compatible chat completions API
 	getDefinition() {
 		return {
 			type: 'function',

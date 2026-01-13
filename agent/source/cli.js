@@ -4,7 +4,7 @@ import {render} from 'ink';
 import meow from 'meow';
 import App from './app.js';
 import ConfigManager from './config/config-manager.js';
-import GrokClient from './api/grok-client.js';
+import OpenAIClient from './api/openai-client.js';
 import ToolExecutor from './tools/tool-executor.js';
 import FileTracker from './utils/file-tracker.js';
 import ReadFileTool from './tools/read-file-tool.js';
@@ -22,21 +22,29 @@ const cli = meow(
 		  $ agent [options]
 
 		Options
-		  --token, -t      Grok API token
-		  --model, -m      Model to use (default: grok-beta)
+		  --token, -t      API token (required)
+		  --url, -u        API base URL (required, e.g., https://api.openai.com/v1)
+		  --model, -m      Model to use (default: gpt-4)
 		  --dir, -d        Working directory (default: current directory)
 		  --config, -c     Path to config file
 
 		Examples
-		  $ agent --token=xai-xxx
+		  $ agent --token=sk-xxx --url=https://api.openai.com/v1
 		  $ agent --dir=/path/to/project
-		  $ GROK_API_TOKEN=xai-xxx agent
+		  $ API_TOKEN=sk-xxx API_URL=https://api.openai.com/v1 agent
+
+		Supported Providers
+		  OpenAI:      https://api.openai.com/v1
+		  OpenRouter:  https://openrouter.ai/api/v1
+		  Local LLM:   http://localhost:1234/v1
+		  Azure:       https://YOUR-RESOURCE.openai.azure.com/openai/deployments/YOUR-DEPLOYMENT
 	`,
 	{
 		importMeta: import.meta,
 		flags: {
 			token: {type: 'string', alias: 't'},
-			model: {type: 'string', alias: 'm', default: 'grok-beta'},
+			url: {type: 'string', alias: 'u'},
+			model: {type: 'string', alias: 'm', default: 'gpt-4'},
 			dir: {type: 'string', alias: 'd'},
 			config: {type: 'string', alias: 'c'},
 		},
@@ -51,14 +59,29 @@ async function initializeApp() {
 	if (!config || !config.apiToken) {
 		console.error('Error: No API token found.');
 		console.error('Please provide a token via:');
-		console.error('  - CLI flag: --token=xai-xxx');
-		console.error('  - Environment variable: GROK_API_TOKEN=xai-xxx');
+		console.error('  - CLI flag: --token=sk-xxx');
+		console.error('  - Environment variable: API_TOKEN=sk-xxx');
 		console.error('  - Config file: ~/.config/agent/config.json');
 		process.exit(1);
 	}
 
+	if (!config.apiUrl) {
+		console.error('Error: No API URL found.');
+		console.error('Please provide a URL via:');
+		console.error('  - CLI flag: --url=https://api.openai.com/v1');
+		console.error('  - Environment variable: API_URL=https://api.openai.com/v1');
+		console.error('  - Config file: ~/.config/agent/config.json');
+		console.error('');
+		console.error('Supported providers:');
+		console.error('  - OpenAI:      https://api.openai.com/v1');
+		console.error('  - OpenRouter:  https://openrouter.ai/api/v1');
+		console.error('  - Local LLM:   http://localhost:1234/v1');
+		console.error('  - Azure:       https://YOUR-RESOURCE.openai.azure.com/...');
+		process.exit(1);
+	}
+
 	// Initialize components
-	const grokClient = new GrokClient(config.apiToken);
+	const apiClient = new OpenAIClient(config.apiToken, config.apiUrl);
 	const fileTracker = new FileTracker();
 	const toolExecutor = new ToolExecutor(config.workingDir, fileTracker);
 
@@ -76,7 +99,7 @@ async function initializeApp() {
 	render(
 		<App
 			config={config}
-			grokClient={grokClient}
+			apiClient={apiClient}
 			toolExecutor={toolExecutor}
 			fileTracker={fileTracker}
 		/>,

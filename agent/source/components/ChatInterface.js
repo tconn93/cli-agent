@@ -7,9 +7,9 @@ import ThinkingIndicator from './ThinkingIndicator.js';
 import StatusBar from './StatusBar.js';
 import CommandHandler from '../utils/command-handler.js';
 
-function ChatInterface({config, grokClient, toolExecutor, fileTracker}) {
+function ChatInterface({config, apiClient, toolExecutor, fileTracker}) {
 	const {messages, status, error, sendMessage, clearMessages} = useAgentLoop(
-		grokClient,
+		apiClient,
 		toolExecutor,
 		config,
 	);
@@ -30,7 +30,7 @@ function ChatInterface({config, grokClient, toolExecutor, fileTracker}) {
 				fileTracker,
 				config,
 				messages,
-				grokClient,
+				apiClient,
 			});
 
 			if (result) {
@@ -107,7 +107,7 @@ function ChatInterface({config, grokClient, toolExecutor, fileTracker}) {
 		<Box flexDirection="column" padding={1}>
 			<Box marginBottom={1}>
 				<Text bold color="magenta">
-					Grok Coding Agent
+					OpenAI Coding Agent
 				</Text>
 				<Text dimColor> - Type /help for commands</Text>
 			</Box>
