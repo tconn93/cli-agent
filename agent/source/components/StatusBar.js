@@ -1,7 +1,7 @@
 import React from 'react';
 import {Box, Text} from 'ink';
 
-function StatusBar({model, workingDir, messageCount}) {
+function StatusBar({model, workingDir, messageCount, activeAgents = 0}) {
 	return (
 		<Box borderStyle="single" paddingX={1}>
 			<Text dimColor>Model: </Text>
@@ -10,6 +10,8 @@ function StatusBar({model, workingDir, messageCount}) {
 			<Text>{workingDir}</Text>
 			<Text dimColor> | Messages: </Text>
 			<Text>{messageCount}</Text>
+			<Text dimColor> | Active Tasks: </Text>
+			<Text color="magenta">{activeAgents}</Text>
 		</Box>
 	);
 }

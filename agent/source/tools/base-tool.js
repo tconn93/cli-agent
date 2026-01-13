@@ -21,7 +21,9 @@ class BaseTool {
 
 	// Execute the tool - must be implemented by subclasses
 	async execute(args) {
-		throw new Error(`execute() must be implemented by ${this.constructor.name}`);
+		throw new Error(
+			`execute() must be implemented by ${this.constructor.name}`,
+		);
 	}
 
 	// Helper to validate required arguments

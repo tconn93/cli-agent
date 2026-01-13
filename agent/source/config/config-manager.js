@@ -4,43 +4,56 @@ import fs from 'fs/promises';
 
 class ConfigManager {
 	constructor() {
-		this.configPath = path.join(os.homedir(), '.config', 'agent', 'config.json');
+		this.configPath = path.join(
+			os.homedir(),
+			'.config',
+			'agent',
+			'config.json',
+		);
 	}
 
 	async load(cliFlags = {}) {
 		// Priority: CLI flags > Environment variables > Config file
 
-		// 1. Check CLI flags first
-		if (cliFlags.token) {
-			return {
-				apiToken: cliFlags.token,
-				model: cliFlags.model || 'grok-beta',
-				workingDir: cliFlags.dir || process.cwd(),
-			};
-		}
+		// Default pricing per 1M tokens (USD)
+		const defaultPricing = {
+			inputCostPer1M: 5.0, // $5 per 1M input tokens (example)
+			outputCostPer1M: 15.0, // $15 per 1M output tokens (example)
+		};
 
-		// 2. Check environment variables
-		if (process.env.GROK_API_TOKEN) {
-			return {
-				apiToken: process.env.GROK_API_TOKEN,
-				model: process.env.GROK_MODEL || cliFlags.model || 'grok-beta',
-				workingDir: cliFlags.dir || process.cwd(),
-			};
-		}
-
-		// 3. Check config file
+		// Load config file first (if it exists) to use as base
+		let fileConfig = {};
 		try {
 			const data = await fs.readFile(this.configPath, 'utf-8');
-			const config = JSON.parse(data);
-
-			return {
-				apiToken: config.apiToken,
-				model: cliFlags.model || config.model || 'grok-beta',
-				workingDir: cliFlags.dir || config.workingDir || process.cwd(),
-			};
+			fileConfig = JSON.parse(data);
 		} catch {
-			return null;
+			// Config file doesn't exist or is invalid, use defaults
 		}
+
+		// Build final config with priority: CLI > Env > File > Defaults
+		const apiToken =
+			cliFlags.token || process.env.GROK_API_TOKEN || fileConfig.apiToken;
+
+		if (!apiToken) {
+			return null; // No API token found
+		}
+
+		const model =
+			cliFlags.model ||
+			process.env.GROK_MODEL ||
+			fileConfig.model ||
+			'grok-beta';
+
+		const workingDir = cliFlags.dir || fileConfig.workingDir || process.cwd();
+
+		const pricing = fileConfig.pricing || defaultPricing;
+
+		return {
+			apiToken,
+			model,
+			workingDir,
+			pricing,
+		};
 	}
 
 	async save(config) {

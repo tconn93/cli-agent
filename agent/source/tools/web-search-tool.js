@@ -5,7 +5,8 @@ class WebSearchTool extends BaseTool {
 		super(workingDir, fileTracker);
 
 		this.name = 'web_search';
-		this.description = 'Search the web for information. Returns relevant web search results and content.';
+		this.description =
+			'Search the web for information. Returns relevant web search results and content.';
 		this.parameters = {
 			type: 'object',
 			properties: {
@@ -36,8 +37,10 @@ class WebSearchTool extends BaseTool {
 		// For now, return a message indicating web search is not yet configured
 		return {
 			query: args.query,
-			message: 'Web search tool is not yet configured. Please set up a search API integration.',
-			suggestion: 'You can use xAI\'s built-in web search by enabling search_parameters in the API request, or integrate with a third-party search API like Tavily, SerpAPI, or Google Custom Search.',
+			message:
+				'Web search tool is not yet configured. Please set up a search API integration.',
+			suggestion:
+				"You can use xAI's built-in web search by enabling search_parameters in the API request, or integrate with a third-party search API like Tavily, SerpAPI, or Google Custom Search.",
 		};
 	}
 }

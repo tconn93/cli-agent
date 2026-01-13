@@ -1,4 +1,4 @@
-import React, {useState, useMemo} from 'react';
+import React, {useState, useMemo, useEffect} from 'react';
 import {Box, Text, useApp} from 'ink';
 import useAgentLoop from '../hooks/useAgentLoop.js';
 import MessageList from './MessageList.js';
@@ -6,8 +6,20 @@ import InputBox from './InputBox.js';
 import ThinkingIndicator from './ThinkingIndicator.js';
 import StatusBar from './StatusBar.js';
 import CommandHandler from '../utils/command-handler.js';
+import {TodoReader} from '../utils/todo-reader.js';
+import TaskListDisplay from './TaskListDisplay.js';
+import PlanningIndicator from './PlanningIndicator.js';
+import TokenUsageDisplay from './TokenUsageDisplay.js';
 
-function ChatInterface({config, grokClient, toolExecutor, fileTracker}) {
+function ChatInterface({
+	config,
+	grokClient,
+	toolExecutor,
+	fileTracker,
+	subAgentManager,
+	planningModeManager,
+	tokenTracker,
+}) {
 	const {messages, status, error, sendMessage, clearMessages} = useAgentLoop(
 		grokClient,
 		toolExecutor,
@@ -15,12 +27,58 @@ function ChatInterface({config, grokClient, toolExecutor, fileTracker}) {
 	);
 
 	const [commandMessages, setCommandMessages] = useState([]);
+	const [todos, setTodos] = useState([]);
+	const [activeAgents, setActiveAgents] = useState(0);
+	const [planningMode, setPlanningMode] = useState('idle');
 	const commandHandler = useMemo(() => new CommandHandler(), []);
 	const {exit} = useApp();
 
+	// Poll TODO.md file every 2 seconds
+	useEffect(() => {
+		const interval = setInterval(async () => {
+			try {
+				const tasks = await TodoReader.readTodoFile(config.workingDir);
+				setTodos(tasks);
+			} catch (error) {
+				// Silently ignore errors (file might not exist yet)
+			}
+		}, 2000);
+
+		// Initial load
+		TodoReader.readTodoFile(config.workingDir)
+			.then(setTodos)
+			.catch(() => {
+				// Ignore
+			});
+
+		return () => clearInterval(interval);
+	}, [config.workingDir]);
+
+	// Poll active agents count
+	useEffect(() => {
+		const interval = setInterval(() => {
+			if (subAgentManager) {
+				setActiveAgents(subAgentManager.getActiveAgentCount());
+			}
+		}, 1000);
+
+		return () => clearInterval(interval);
+	}, [subAgentManager]);
+
+	// Poll planning mode state
+	useEffect(() => {
+		const interval = setInterval(() => {
+			if (planningModeManager) {
+				setPlanningMode(planningModeManager.getMode());
+			}
+		}, 1000);
+
+		return () => clearInterval(interval);
+	}, [planningModeManager]);
+
 	const isThinking = status !== 'idle';
 
-	const handleInput = async (input) => {
+	const handleInput = async input => {
 		// Check if it's a command
 		if (commandHandler.isCommand(input)) {
 			// Execute command
@@ -31,13 +89,14 @@ function ChatInterface({config, grokClient, toolExecutor, fileTracker}) {
 				config,
 				messages,
 				grokClient,
+				planningModeManager,
 			});
 
 			if (result) {
 				// Check if this is an async command
 				if (result.async && result.executor) {
 					// Show initial message
-					setCommandMessages((prev) => [
+					setCommandMessages(prev => [
 						...prev,
 						{
 							role: 'system',
@@ -52,7 +111,7 @@ function ChatInterface({config, grokClient, toolExecutor, fileTracker}) {
 						const asyncResult = await result.executor();
 
 						// Show final result
-						setCommandMessages((prev) => [
+						setCommandMessages(prev => [
 							...prev,
 							{
 								role: 'system',
@@ -62,7 +121,7 @@ function ChatInterface({config, grokClient, toolExecutor, fileTracker}) {
 							},
 						]);
 					} catch (error) {
-						setCommandMessages((prev) => [
+						setCommandMessages(prev => [
 							...prev,
 							{
 								role: 'system',
@@ -74,7 +133,7 @@ function ChatInterface({config, grokClient, toolExecutor, fileTracker}) {
 					}
 				} else {
 					// Synchronous command
-					setCommandMessages((prev) => [
+					setCommandMessages(prev => [
 						...prev,
 						{
 							role: 'system',
@@ -101,7 +160,9 @@ function ChatInterface({config, grokClient, toolExecutor, fileTracker}) {
 	};
 
 	// Combine regular messages and command messages
-	const allMessages = [...messages, ...commandMessages].sort((a, b) => a.timestamp - b.timestamp);
+	const allMessages = [...messages, ...commandMessages].sort(
+		(a, b) => a.timestamp - b.timestamp,
+	);
 
 	return (
 		<Box flexDirection="column" padding={1}>
@@ -116,7 +177,14 @@ function ChatInterface({config, grokClient, toolExecutor, fileTracker}) {
 				model={config.model}
 				workingDir={config.workingDir}
 				messageCount={messages.length}
+				activeAgents={activeAgents}
 			/>
+
+			<TokenUsageDisplay tokenTracker={tokenTracker} />
+
+			<PlanningIndicator mode={planningMode} />
+
+			<TaskListDisplay todos={todos} />
 
 			<MessageList messages={allMessages} />
 

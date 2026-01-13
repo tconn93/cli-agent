@@ -15,6 +15,13 @@ import ListFilesTool from './tools/list-files-tool.js';
 import SearchFilesTool from './tools/search-files-tool.js';
 import WebSearchTool from './tools/web-search-tool.js';
 import ExploreProjectTool from './tools/explore-project-tool.js';
+import SubAgentManager from './agents/sub-agent-manager.js';
+import TaskTool from './tools/task-tool.js';
+import TodoWriteTool from './tools/todo-write-tool.js';
+import PlanningModeManager from './utils/planning-mode-manager.js';
+import EnterPlanModeTool from './tools/enter-plan-mode-tool.js';
+import ExitPlanModeTool from './tools/exit-plan-mode-tool.js';
+import TokenTracker from './utils/token-tracker.js';
 
 const cli = meow(
 	`
@@ -36,7 +43,7 @@ const cli = meow(
 		importMeta: import.meta,
 		flags: {
 			token: {type: 'string', alias: 't'},
-			model: {type: 'string', alias: 'm', default: 'grok-beta'},
+			model: {type: 'string', alias: 'm'},
 			dir: {type: 'string', alias: 'd'},
 			config: {type: 'string', alias: 'c'},
 		},
@@ -58,19 +65,51 @@ async function initializeApp() {
 	}
 
 	// Initialize components
-	const grokClient = new GrokClient(config.apiToken);
+	const tokenTracker = new TokenTracker(config.pricing);
+	const grokClient = new GrokClient(
+		config.apiToken,
+		'https://api.x.ai/v1',
+		tokenTracker,
+	);
 	const fileTracker = new FileTracker();
-	const toolExecutor = new ToolExecutor(config.workingDir, fileTracker);
+	const planningModeManager = new PlanningModeManager(config.workingDir);
+	const toolExecutor = new ToolExecutor(
+		config.workingDir,
+		fileTracker,
+		planningModeManager,
+	);
+	const subAgentManager = new SubAgentManager(
+		config.apiToken,
+		toolExecutor,
+		config,
+		GrokClient,
+	);
 
 	// Register tools
 	toolExecutor.registerTool(new ReadFileTool(config.workingDir, fileTracker));
 	toolExecutor.registerTool(new WriteFileTool(config.workingDir, fileTracker));
 	toolExecutor.registerTool(new EditFileTool(config.workingDir, fileTracker));
-	toolExecutor.registerTool(new BashExecuteTool(config.workingDir, fileTracker));
+	toolExecutor.registerTool(
+		new BashExecuteTool(config.workingDir, fileTracker),
+	);
 	toolExecutor.registerTool(new ListFilesTool(config.workingDir, fileTracker));
-	toolExecutor.registerTool(new SearchFilesTool(config.workingDir, fileTracker));
-	toolExecutor.registerTool(new ExploreProjectTool(config.workingDir, fileTracker));
+	toolExecutor.registerTool(
+		new SearchFilesTool(config.workingDir, fileTracker),
+	);
+	toolExecutor.registerTool(
+		new ExploreProjectTool(config.workingDir, fileTracker),
+	);
 	toolExecutor.registerTool(new WebSearchTool(config.workingDir, fileTracker));
+	toolExecutor.registerTool(
+		new TaskTool(config.workingDir, fileTracker, subAgentManager),
+	);
+	toolExecutor.registerTool(new TodoWriteTool(config.workingDir, fileTracker));
+	toolExecutor.registerTool(
+		new EnterPlanModeTool(config.workingDir, fileTracker, planningModeManager),
+	);
+	toolExecutor.registerTool(
+		new ExitPlanModeTool(config.workingDir, fileTracker, planningModeManager),
+	);
 
 	// Render the app
 	render(
@@ -79,11 +118,14 @@ async function initializeApp() {
 			grokClient={grokClient}
 			toolExecutor={toolExecutor}
 			fileTracker={fileTracker}
+			subAgentManager={subAgentManager}
+			planningModeManager={planningModeManager}
+			tokenTracker={tokenTracker}
 		/>,
 	);
 }
 
-initializeApp().catch((error) => {
+initializeApp().catch(error => {
 	console.error('Failed to initialize app:', error.message);
 	process.exit(1);
 });

@@ -80,7 +80,7 @@ class CommandHandler {
 
 				const tools = context.toolExecutor.getToolDefinitions();
 				const toolList = tools
-					.map((tool) => `  **${tool.name}** - ${tool.description}`)
+					.map(tool => `  **${tool.name}** - ${tool.description}`)
 					.join('\n');
 
 				return {
@@ -96,9 +96,13 @@ class CommandHandler {
 			handler: (args, context) => {
 				const {messages = [], fileTracker, config} = context;
 
-				const userMessages = messages.filter((m) => m.role === 'user').length;
-				const assistantMessages = messages.filter((m) => m.role === 'assistant').length;
-				const toolCalls = messages.filter((m) => m.role === 'assistant' && m.tool_calls).length;
+				const userMessages = messages.filter(m => m.role === 'user').length;
+				const assistantMessages = messages.filter(
+					m => m.role === 'assistant',
+				).length;
+				const toolCalls = messages.filter(
+					m => m.role === 'assistant' && m.tool_calls,
+				).length;
 
 				let stats = `**Session Statistics**\n\n`;
 				stats += `Model: ${config?.model || 'Unknown'}\n`;
@@ -132,7 +136,8 @@ class CommandHandler {
 		});
 
 		this.register('init', {
-			description: 'Initialize project context by exploring structure and creating GROK.md',
+			description:
+				'Initialize project context by exploring structure and creating GROK.md',
 			usage: '/init',
 			handler: async (args, context) => {
 				const {toolExecutor, grokClient, config} = context;
@@ -162,6 +167,56 @@ class CommandHandler {
 				}
 			},
 		});
+
+		this.register('approve', {
+			description: 'Approve the current plan and exit planning mode',
+			usage: '/approve',
+			handler: (args, context) => {
+				const {planningModeManager} = context;
+
+				if (!planningModeManager) {
+					return {
+						success: false,
+						message: 'Planning mode manager not available.',
+					};
+				}
+
+				try {
+					const result = planningModeManager.approvePlan();
+					return result;
+				} catch (error) {
+					return {
+						success: false,
+						message: error.message,
+					};
+				}
+			},
+		});
+
+		this.register('reject', {
+			description: 'Reject the current plan and return to planning mode',
+			usage: '/reject',
+			handler: (args, context) => {
+				const {planningModeManager} = context;
+
+				if (!planningModeManager) {
+					return {
+						success: false,
+						message: 'Planning mode manager not available.',
+					};
+				}
+
+				try {
+					const result = planningModeManager.rejectPlan();
+					return result;
+				} catch (error) {
+					return {
+						success: false,
+						message: error.message,
+					};
+				}
+			},
+		});
 	}
 
 	async executeInit(toolExecutor, grokClient, config) {
@@ -180,13 +235,18 @@ class CommandHandler {
 
 			let readmeContent = '';
 			if (listTool && readTool) {
-				const readmeFiles = await listTool.execute({pattern: '**/README.md', max_results: 10});
+				const readmeFiles = await listTool.execute({
+					pattern: '**/README.md',
+					max_results: 10,
+				});
 
 				if (readmeFiles.files && readmeFiles.files.length > 0) {
 					// Read the first README (usually at root)
 					const mainReadme = readmeFiles.files[0];
 					try {
-						const readmeData = await readTool.execute({file_path: mainReadme.path});
+						const readmeData = await readTool.execute({
+							file_path: mainReadme.path,
+						});
 						readmeContent = readmeData.content;
 					} catch {
 						// README not readable
@@ -207,7 +267,11 @@ Statistics:
 - Total Directories: ${projectStructure.total_directories}
 - Root Directory: ${projectStructure.root}
 
-${readmeContent ? `## README.md Content\n\`\`\`\n${readmeContent}\n\`\`\`\n` : ''}
+${
+	readmeContent
+		? `## README.md Content\n\`\`\`\n${readmeContent}\n\`\`\`\n`
+		: ''
+}
 
 Please create a GROK.md file with the following sections:
 
@@ -235,12 +299,14 @@ Make it concise but informative. Focus on what would be most helpful when workin
 
 			// 5. Parse response
 			const {output} = response;
-			const assistantMessages = output.filter((item) => item.type === 'message' && item.role === 'assistant');
+			const assistantMessages = output.filter(
+				item => item.type === 'message' && item.role === 'assistant',
+			);
 
 			let grokMdContent = '';
 			if (assistantMessages.length > 0) {
 				const content = assistantMessages[0].content || [];
-				const textContent = content.find((c) => c.type === 'output_text');
+				const textContent = content.find(c => c.type === 'output_text');
 				if (textContent) {
 					grokMdContent = textContent.text;
 				}

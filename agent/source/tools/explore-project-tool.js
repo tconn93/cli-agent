@@ -8,17 +8,20 @@ class ExploreProjectTool extends BaseTool {
 		super(workingDir, fileTracker);
 
 		this.name = 'explore_project';
-		this.description = 'Get a file tree structure of the project. Shows directories and files with their hierarchy, excluding .gitignore patterns.';
+		this.description =
+			'Get a file tree structure of the project. Shows directories and files with their hierarchy, excluding .gitignore patterns.';
 		this.parameters = {
 			type: 'object',
 			properties: {
 				max_depth: {
 					type: 'number',
-					description: 'Maximum depth to traverse (default: 5). Use lower values for large projects.',
+					description:
+						'Maximum depth to traverse (default: 5). Use lower values for large projects.',
 				},
 				include_hidden: {
 					type: 'boolean',
-					description: 'Include hidden files/directories starting with . (default: false)',
+					description:
+						'Include hidden files/directories starting with . (default: false)',
 				},
 			},
 			required: [],
@@ -34,7 +37,14 @@ class ExploreProjectTool extends BaseTool {
 			const ignorePatterns = await this.readGitignore();
 
 			// Build file tree
-			const tree = await this.buildTree(this.workingDir, '', 0, maxDepth, ignorePatterns, includeHidden);
+			const tree = await this.buildTree(
+				this.workingDir,
+				'',
+				0,
+				maxDepth,
+				ignorePatterns,
+				includeHidden,
+			);
 
 			// Format tree as string
 			const treeString = this.formatTree(tree);
@@ -114,7 +124,14 @@ class ExploreProjectTool extends BaseTool {
 		return false;
 	}
 
-	async buildTree(dirPath, prefix, depth, maxDepth, ignorePatterns, includeHidden) {
+	async buildTree(
+		dirPath,
+		prefix,
+		depth,
+		maxDepth,
+		ignorePatterns,
+		includeHidden,
+	) {
 		if (depth >= maxDepth) {
 			return null;
 		}

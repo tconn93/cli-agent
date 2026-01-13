@@ -13,7 +13,8 @@ class ReadFileTool extends BaseTool {
 			properties: {
 				file_path: {
 					type: 'string',
-					description: 'The path to the file to read (absolute or relative to working directory)',
+					description:
+						'The path to the file to read (absolute or relative to working directory)',
 				},
 			},
 			required: ['file_path'],

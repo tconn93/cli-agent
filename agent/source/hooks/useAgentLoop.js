@@ -6,7 +6,7 @@ function useAgentLoop(grokClient, toolExecutor, config) {
 	const [error, setError] = useState(null);
 
 	const sendMessage = useCallback(
-		async (userInput) => {
+		async userInput => {
 			if (!userInput.trim()) {
 				return;
 			}
@@ -20,7 +20,7 @@ function useAgentLoop(grokClient, toolExecutor, config) {
 					content: userInput,
 					timestamp: Date.now(),
 				};
-				setMessages((prev) => [...prev, userMessage]);
+				setMessages(prev => [...prev, userMessage]);
 				setStatus('calling_api');
 
 				// 2. Call Grok API with user input
@@ -41,14 +41,18 @@ function useAgentLoop(grokClient, toolExecutor, config) {
 					const {output} = response;
 
 					// Extract assistant message and tool calls
-					const assistantMessages = output.filter((item) => item.type === 'message' && item.role === 'assistant');
-					const toolCalls = output.filter((item) => item.type === 'function_call');
+					const assistantMessages = output.filter(
+						item => item.type === 'message' && item.role === 'assistant',
+					);
+					const toolCalls = output.filter(
+						item => item.type === 'function_call',
+					);
 
 					// Extract text content from assistant message
 					let assistantText = '';
 					if (assistantMessages.length > 0) {
 						const content = assistantMessages[0].content || [];
-						const textContent = content.find((c) => c.type === 'output_text');
+						const textContent = content.find(c => c.type === 'output_text');
 						if (textContent) {
 							assistantText = textContent.text;
 						}
@@ -62,7 +66,7 @@ function useAgentLoop(grokClient, toolExecutor, config) {
 							tool_calls: toolCalls.length > 0 ? toolCalls : null,
 							timestamp: Date.now(),
 						};
-						setMessages((prev) => [...prev, assistantMessage]);
+						setMessages(prev => [...prev, assistantMessage]);
 					}
 
 					// Check if there are tool calls to execute
@@ -73,13 +77,13 @@ function useAgentLoop(grokClient, toolExecutor, config) {
 						const toolResults = await toolExecutor.executeAll(toolCalls);
 
 						// Add tool results to display
-						const toolResultMessages = toolResults.map((result) => ({
+						const toolResultMessages = toolResults.map(result => ({
 							role: 'tool',
 							content: result.output,
 							call_id: result.call_id,
 							timestamp: Date.now(),
 						}));
-						setMessages((prev) => [...prev, ...toolResultMessages]);
+						setMessages(prev => [...prev, ...toolResultMessages]);
 
 						// Send tool results back to API
 						setStatus('calling_api');
@@ -98,11 +102,12 @@ function useAgentLoop(grokClient, toolExecutor, config) {
 
 				// Safety check: if we hit max iterations, warn the user
 				if (iteration >= maxIterations) {
-					setMessages((prev) => [
+					setMessages(prev => [
 						...prev,
 						{
 							role: 'assistant',
-							content: '⚠️ Maximum tool execution iterations reached. Stopping to prevent infinite loop.',
+							content:
+								'⚠️ Maximum tool execution iterations reached. Stopping to prevent infinite loop.',
 							timestamp: Date.now(),
 						},
 					]);

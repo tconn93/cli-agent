@@ -8,7 +8,8 @@ class SearchFilesTool extends BaseTool {
 		super(workingDir, fileTracker);
 
 		this.name = 'search_files';
-		this.description = 'Search for text or regex patterns in files. Returns matching lines with line numbers.';
+		this.description =
+			'Search for text or regex patterns in files. Returns matching lines with line numbers.';
 		this.parameters = {
 			type: 'object',
 			properties: {
@@ -18,15 +19,18 @@ class SearchFilesTool extends BaseTool {
 				},
 				file_pattern: {
 					type: 'string',
-					description: 'Glob pattern for files to search (e.g., "**/*.js"). Defaults to all files.',
+					description:
+						'Glob pattern for files to search (e.g., "**/*.js"). Defaults to all files.',
 				},
 				case_sensitive: {
 					type: 'boolean',
-					description: 'Whether the search should be case-sensitive (default: false)',
+					description:
+						'Whether the search should be case-sensitive (default: false)',
 				},
 				max_results: {
 					type: 'number',
-					description: 'Maximum number of matching files to return (default: 50)',
+					description:
+						'Maximum number of matching files to return (default: 50)',
 				},
 			},
 			required: ['pattern'],

@@ -1,9 +1,10 @@
 class GrokClient {
-	constructor(apiToken, baseURL = 'https://api.x.ai/v1') {
+	constructor(apiToken, baseURL = 'https://api.x.ai/v1', tokenTracker = null) {
 		this.apiToken = apiToken;
 		this.baseURL = baseURL;
 		this.maxRetries = 3;
 		this.previousResponseId = null;
+		this.tokenTracker = tokenTracker;
 	}
 
 	async sendMessage(userMessage, tools, options = {}) {
@@ -45,6 +46,11 @@ class GrokClient {
 			this.previousResponseId = response.id;
 		}
 
+		// Track token usage if tracker is available
+		if (this.tokenTracker && response.usage) {
+			this.tokenTracker.trackRequest(response.usage);
+		}
+
 		return response;
 	}
 
@@ -58,7 +64,7 @@ class GrokClient {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${this.apiToken}`,
+					Authorization: `Bearer ${this.apiToken}`,
 				},
 				body: JSON.stringify(body),
 			});
@@ -66,7 +72,10 @@ class GrokClient {
 			// Handle different HTTP status codes
 			if (response.status === 429) {
 				// Rate limit
-				const retryAfter = parseInt(response.headers.get('retry-after') || '60', 10);
+				const retryAfter = parseInt(
+					response.headers.get('retry-after') || '60',
+					10,
+				);
 
 				if (retryCount < this.maxRetries) {
 					await this._sleep(retryAfter * 1000);
@@ -88,7 +97,9 @@ class GrokClient {
 					return this._makeRequest(body, retryCount + 1);
 				}
 
-				throw new Error(`Server error (${response.status}). Please try again later.`);
+				throw new Error(
+					`Server error (${response.status}). Please try again later.`,
+				);
 			}
 
 			if (!response.ok) {
@@ -100,22 +111,24 @@ class GrokClient {
 					errorData = JSON.parse(responseText);
 				} catch {
 					// Not JSON, use the raw text
-					throw new Error(`HTTP ${response.status}: ${responseText || response.statusText}`);
+					throw new Error(
+						`HTTP ${response.status}: ${responseText || response.statusText}`,
+					);
 				}
 
-				const errorMessage = errorData.error?.message
-					|| errorData.message
-					|| errorData.detail
-					|| (errorData.error ? JSON.stringify(errorData.error) : null)
-					|| JSON.stringify(errorData)
-					|| `HTTP ${response.status}: ${response.statusText}`;
+				const errorMessage =
+					errorData.error?.message ||
+					errorData.message ||
+					errorData.detail ||
+					(errorData.error ? JSON.stringify(errorData.error) : null) ||
+					JSON.stringify(errorData) ||
+					`HTTP ${response.status}: ${response.statusText}`;
 
 				throw new Error(errorMessage);
 			}
 
 			return response.json();
 		} catch (error) {
-
 			// Network errors - retry
 			if (error.name === 'TypeError' && retryCount < this.maxRetries) {
 				const delay = Math.pow(2, retryCount) * 1000;
@@ -128,7 +141,7 @@ class GrokClient {
 	}
 
 	_sleep(ms) {
-		return new Promise((resolve) => setTimeout(resolve, ms));
+		return new Promise(resolve => setTimeout(resolve, ms));
 	}
 }
 

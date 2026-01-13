@@ -8,13 +8,15 @@ class WriteFileTool extends BaseTool {
 		super(workingDir, fileTracker);
 
 		this.name = 'write_file';
-		this.description = 'Write content to a file, creating it if it doesn\'t exist or overwriting if it does';
+		this.description =
+			"Write content to a file, creating it if it doesn't exist or overwriting if it does";
 		this.parameters = {
 			type: 'object',
 			properties: {
 				file_path: {
 					type: 'string',
-					description: 'The path to the file to write (absolute or relative to working directory)',
+					description:
+						'The path to the file to write (absolute or relative to working directory)',
 				},
 				content: {
 					type: 'string',
@@ -33,7 +35,10 @@ class WriteFileTool extends BaseTool {
 
 		try {
 			// Check if file exists
-			const exists = await fs.access(resolvedPath).then(() => true).catch(() => false);
+			const exists = await fs
+				.access(resolvedPath)
+				.then(() => true)
+				.catch(() => false);
 
 			// Create directory if it doesn't exist
 			const dir = path.dirname(resolvedPath);

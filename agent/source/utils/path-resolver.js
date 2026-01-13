@@ -6,7 +6,9 @@ export function validatePath(filePath, workingDir) {
 
 	// Ensure path is within working directory
 	if (!resolved.startsWith(workingDir)) {
-		throw new Error('Path traversal attempt detected. Path must be within working directory.');
+		throw new Error(
+			'Path traversal attempt detected. Path must be within working directory.',
+		);
 	}
 
 	return resolved;

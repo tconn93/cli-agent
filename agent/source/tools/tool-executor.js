@@ -1,7 +1,12 @@
 class ToolExecutor {
-	constructor(workingDirectory, fileTracker = null) {
+	constructor(
+		workingDirectory,
+		fileTracker = null,
+		planningModeManager = null,
+	) {
 		this.workingDir = workingDirectory;
 		this.fileTracker = fileTracker;
+		this.planningModeManager = planningModeManager;
 		this.tools = new Map();
 	}
 
@@ -12,7 +17,7 @@ class ToolExecutor {
 
 	// Get all tool definitions for API
 	getToolDefinitions() {
-		return Array.from(this.tools.values()).map((tool) => tool.getDefinition());
+		return Array.from(this.tools.values()).map(tool => tool.getDefinition());
 	}
 
 	// Execute a single tool call from the API (for /v1/responses format)
@@ -27,6 +32,21 @@ class ToolExecutor {
 				output: JSON.stringify({
 					error: true,
 					message: `Unknown tool: ${toolName}`,
+				}),
+			};
+		}
+
+		// Check if tool is allowed in current mode
+		if (
+			this.planningModeManager &&
+			!this.planningModeManager.isToolAllowed(toolName)
+		) {
+			return {
+				type: 'function_call_output',
+				call_id: toolCall.call_id,
+				output: JSON.stringify({
+					error: true,
+					message: `Tool '${toolName}' is not allowed in planning mode. Only read-only tools (read_file, list_files, search_files, explore_project, exit_plan_mode) are permitted.`,
 				}),
 			};
 		}
@@ -63,7 +83,7 @@ class ToolExecutor {
 
 	// Execute multiple tool calls in parallel
 	async executeAll(toolCalls) {
-		return Promise.all(toolCalls.map((call) => this.execute(call)));
+		return Promise.all(toolCalls.map(call => this.execute(call)));
 	}
 }
 

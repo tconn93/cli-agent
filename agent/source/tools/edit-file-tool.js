@@ -7,17 +7,20 @@ class EditFileTool extends BaseTool {
 		super(workingDir, fileTracker);
 
 		this.name = 'edit_file';
-		this.description = 'Edit a file by searching for old text and replacing it with new text. Use this for targeted edits to existing files.';
+		this.description =
+			'Edit a file by searching for old text and replacing it with new text. Use this for targeted edits to existing files.';
 		this.parameters = {
 			type: 'object',
 			properties: {
 				file_path: {
 					type: 'string',
-					description: 'The path to the file to edit (absolute or relative to working directory)',
+					description:
+						'The path to the file to edit (absolute or relative to working directory)',
 				},
 				old_string: {
 					type: 'string',
-					description: 'The exact text to search for in the file. Must match exactly including whitespace.',
+					description:
+						'The exact text to search for in the file. Must match exactly including whitespace.',
 				},
 				new_string: {
 					type: 'string',

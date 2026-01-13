@@ -7,13 +7,15 @@ class ListFilesTool extends BaseTool {
 		super(workingDir, fileTracker);
 
 		this.name = 'list_files';
-		this.description = 'List files and directories matching a glob pattern. Use patterns like "*.js", "src/**/*.ts", or "**/*.json" to find files.';
+		this.description =
+			'List files and directories matching a glob pattern. Use patterns like "*.js", "src/**/*.ts", or "**/*.json" to find files.';
 		this.parameters = {
 			type: 'object',
 			properties: {
 				pattern: {
 					type: 'string',
-					description: 'Glob pattern to match files. Examples: "*.js" (all JS files in current dir), "src/**/*.ts" (all TS files in src), "**/*.json" (all JSON files recursively)',
+					description:
+						'Glob pattern to match files. Examples: "*.js" (all JS files in current dir), "src/**/*.ts" (all TS files in src), "**/*.json" (all JSON files recursively)',
 				},
 				max_results: {
 					type: 'number',
@@ -42,7 +44,7 @@ class ListFilesTool extends BaseTool {
 			const limitedFiles = files.slice(0, maxResults);
 
 			// Convert to absolute paths and get stats
-			const results = limitedFiles.map((file) => ({
+			const results = limitedFiles.map(file => ({
 				path: path.join(this.workingDir, file),
 				relativePath: file,
 			}));

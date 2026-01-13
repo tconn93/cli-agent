@@ -29,9 +29,9 @@ class FileTracker {
 		const changes = this.getChanges();
 		return {
 			total: this.changes.size,
-			created: changes.filter((c) => c.type === 'created').length,
-			modified: changes.filter((c) => c.type === 'modified').length,
-			deleted: changes.filter((c) => c.type === 'deleted').length,
+			created: changes.filter(c => c.type === 'created').length,
+			modified: changes.filter(c => c.type === 'modified').length,
+			deleted: changes.filter(c => c.type === 'deleted').length,
 			files: changes,
 		};
 	}
